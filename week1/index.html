@@ -1,245 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Titanic EDA — Browser-only (GitHub Pages Ready)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- CDN: Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <!-- Chart.js Matrix plugin for correlation heatmap -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
-  <!-- CDN: PapaParse -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <style>
-    :root {
-      --bg: #0b1020;
-      --panel: #0f172a;
-      --muted: #94a3b8;
-      --text: #e5e7eb;
-      --accent: #38bdf8;
-      --accent-2: #22c55e;
-      --warn: #f59e0b;
-      --danger: #ef4444;
-      --border: #1f2937;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background: radial-gradient(1000px 700px at 80% -10%, #0b1220 0%, #070b14 35%, #05070f 55%, #03050b 80%), var(--bg);
-      color: var(--text);
-      line-height: 1.45;
-    }
-    header {
-      padding: 20px;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-    }
-    header h1 { margin: 0 0 6px 0; font-size: 22px; }
-    header p { margin: 0; color: var(--muted); font-size: 14px; }
-    main {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    section {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 18px;
-    }
-    h2 {
-      margin: 0 0 12px 0;
-      font-size: 18px;
-      color: #eaf2ff;
-    }
-    h3 { margin: 12px 0 8px; font-size: 16px; }
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    @media (max-width: 800px) { .row { grid-template-columns: 1fr; } }
-
-    .controls {
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-    }
-    .btn {
-      appearance: none;
-      border: 1px solid var(--border);
-      padding: 8px 12px;
-      border-radius: 8px;
-      background: #121a2e;
-      color: var(--text);
-      cursor: pointer;
-      transition: 0.15s ease all;
-      font-weight: 600;
-      font-size: 14px;
-    }
-    .btn:hover { border-color: var(--accent); background: #15213d; }
-    .btn.secondary { background: #15212f; }
-    .badge {
-      display: inline-block;
-      font-size: 12px; color: #cbd5e1;
-      border: 1px dashed var(--border);
-      padding: 4px 8px;
-      border-radius: 999px;
-      margin-left: 6px;
-    }
-    input[type="file"] {
-      background: #0d1427;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--muted);
-      padding: 8px;
-      width: 100%;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    th, td {
-      border-bottom: 1px solid var(--border);
-      padding: 6px 8px;
-      text-align: left;
-    }
-    th { background: #0e1630; position: sticky; top: 0; }
-    .scroll {
-      overflow: auto;
-      max-height: 300px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: #0a1227;
-    }
-    .note {
-      color: var(--muted);
-      font-size: 13px;
-      margin-top: 8px;
-    }
-    .inline-code {
-      background: #0d1427;
-      border: 1px solid var(--border);
-      padding: 2px 6px;
-      border-radius: 6px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 13px;
-      color: #c7d2fe;
-    }
-    .split {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
-    canvas {
-      background: #0a1022;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px;
-    }
-    footer { color: var(--muted); font-size: 12px; text-align: center; padding: 20px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titanic Dataset EDA</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .flex-col {
+            flex: 1;
+            min-width: 300px;
+        }
+        .alert {
+            padding: 10px;
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            padding: 10px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        @media (max-width: 768px) {
+            .flex-row {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Titanic EDA (Client-side, GitHub Pages-ready)</h1>
-    <p>Load train.csv and test.csv from Kaggle. Everything runs locally in your browser.</p>
-  </header>
-
-  <main>
-    <section id="load">
-      <h2>Data Load</h2>
-      <div class="row">
-        <div>
-          <label for="trainFile">Select train.csv</label>
-          <input id="trainFile" type="file" accept=".csv" />
+    <div class="container">
+        <h1>Titanic Dataset Exploratory Data Analysis</h1>
+        
+        <div class="controls">
+            <button id="loadData">Load Data</button>
+            <button id="runEDA">Run EDA</button>
+            <button id="exportCSV">Export CSV</button>
+            <button id="exportJSON">Export JSON</button>
         </div>
-        <div>
-          <label for="testFile">Select test.csv</label>
-          <input id="testFile" type="file" accept=".csv" />
+        
+        <div id="messageArea"></div>
+        
+        <div class="section">
+            <h2>Data Overview</h2>
+            <div id="dataOverview"></div>
+            <div id="previewTable"></div>
         </div>
-      </div>
-      <div class="controls" style="margin-top: 10px;">
-        <button id="btnLoad" class="btn">Load Files</button>
-        <button id="btnRun" class="btn secondary">Run EDA</button>
-        <span class="badge" id="statusBadge">Waiting for files...</span>
-      </div>
-      <p class="note">Deployment note: Create public GitHub repo, commit index.html/app.js, enable Pages (main/root), test URL.</p>
-    </section>
-
-    <section id="overview">
-      <h2>Merge & Overview</h2>
-      <div class="split">
-        <div>
-          <h3>Shape</h3>
-          <div id="shapeBox" class="note">Rows: -, Columns: -</div>
-          <div id="columnsBox" class="note" style="margin-top:6px;">Columns: -</div>
+        
+        <div class="section">
+            <h2>Missing Values Analysis</h2>
+            <div class="chart-container">
+                <canvas id="missingValuesChart"></canvas>
+            </div>
         </div>
-        <div>
-          <h3>Merged Preview</h3>
-          <div class="scroll">
-                  </div>
+        
+        <div class="section">
+            <h2>Statistical Summary</h2>
+            <div id="statsSummary"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Visualizations</h2>
+            <div class="flex-row">
+                <div class="flex-col">
+                    <h3>Survival by Sex</h3>
+                    <div class="chart-container">
+                        <canvas id="sexChart"></canvas>
+                    </div>
+                </div>
+                <div class="flex-col">
+                    <h3>Survival by Class</h3>
+                    <div class="chart-container">
+                        <canvas id="classChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-row">
+                <div class="flex-col">
+                    <h3>Age Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="ageChart"></canvas>
+                    </div>
+                </div>
+                <div class="flex-col">
+                    <h3>Fare Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="fareChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-row">
+                <div class="flex-col">
+                    <h3>Embarkation Port</h3>
+                    <div class="chart-container">
+                        <canvas id="embarkedChart"></canvas>
+                    </div>
+                </div>
+                <div class="flex-col">
+                    <h3>Correlation Heatmap</h3>
+                    <div class="chart-container">
+                        <canvas id="correlationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</section>
 
-<section id="missing">
-  <h2>Missing Values</h2>
-  <canvas id="missingChart" height="260"></canvas>
-</section>
-
-<section id="stats">
-  <h2>Stats Summary</h2>
-  <div class="split">
-    <div>
-      <h3>Numeric (overall)</h3>
-      <div class="scroll">
-        </div> </div> <div> <h3>Numeric by Survived (train)</h3> <div class="scroll">
-</div> </div> </div> <div class="split" style="margin-top: 12px;"> <div> <h3>Categorical Counts (overall)</h3> <div class="scroll">
-</div> </div> <div> <h3>Categorical by Survived (train)</h3> <div class="scroll">
-</div> </div> </div> </section>
-
-    <section id="viz">
-  <h2>Visualizations</h2>
-  <div class="split">
-    <div>
-      <h3>Sex (bar)</h3>
-      <canvas id="sexBar" height="220"></canvas>
-    </div>
-    <div>
-      <h3>Pclass (bar)</h3>
-      <canvas id="pclassBar" height="220"></canvas>
-    </div>
-  </div>
-  <div class="split" style="margin-top: 12px;">
-    <div>
-      <h3>Embarked (bar)</h3>
-      <canvas id="embarkedBar" height="220"></canvas>
-    </div>
-    <div>
-      <h3>Age Histogram</h3>
-      <canvas id="ageHist" height="220"></canvas>
-    </div>
-  </div>
-  <div class="split" style="margin-top: 12px;">
-    <div>
-      <h3>Fare Histogram</h3>
-      <canvas id="fareHist" height="220"></canvas>
-    </div>
-    <div>
-      <h3>Correlation Heatmap (train numeric)</h3>
-      <canvas id="corrHeatmap" height="260"></canvas>
-    </div>
-  </div>
-</section>
-
-<section id="export">
-  <h2>Export</h2>
-  <div class="controls">
-    <button id="btnExportCsv" class="btn">Download Merged CSV</button>
-    <button id="btnExportJson" class="btn">Download JSON Summary</button>
-  </div>
-  <p class="note">Everything runs locally. Exports are generated on-the-fly in your browser.</p>
-</section>
+    <script src="app.js"></script>
+</body>
+</html>
