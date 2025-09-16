@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titanic Survival Classifier - TensorFlow.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis@latest"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        header h1 {
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--light);
+        }
+        
+        .btn {
+            display: inline-block;
+            background: var(--secondary);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn-success {
+            background: var(--success);
+        }
+        
+        .btn-success:hover {
+            background: #27ae60;
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+        }
+        
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .file-input {
+            margin: 10px 0;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: var(--light);
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .metrics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .metric {
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+            padding: 10px;
+            background: var(--light);
+            border-radius: 4px;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+        
+        .slider-container {
+            margin: 15px 0;
+        }
+        
+        .slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Titanic Survival Classifier</h1>
+            <p>Machine Learning in the Browser with TensorFlow.js</p>
+        </header>
+        
+        <section id="data-load">
+            <div class="section-title">
+                <h2>1. Data Load</h2>
+            </div>
+            <div class="file-input">
+                <label for="train-file">Training Data (train.csv):</label>
+                <input type="file" id="train-file" accept=".csv">
+            </div>
+            <div class="file-input">
+                <label for="test-file">Test Data (test.csv):</label>
+                <input type="file" id="test-file" accept=".csv">
+            </div>
+            <button id="load-data-btn" class="btn">Load and Inspect Data</button>
+            <div id="data-status" class="status"></div>
+            <div id="data-preview" class="card"></div>
+        </section>
+        
+        <section id="preprocessing">
+            <div class="section-title">
+                <h2>2. Preprocessing</h2>
+                <button id="preprocess-btn" class="btn" disabled>Preprocess Data</button>
+            </div>
+            <div id="preprocess-status" class="status"></div>
+            <div id="preprocess-info" class="card"></div>
+        </section>
+        
+        <section id="model">
+            <div class="section-title">
+                <h2>3. Model</h2>
+                <button id="create-model-btn" class="btn" disabled>Create Model</button>
+            </div>
+            <div id="model-status" class="status"></div>
+            <div id="model-summary" class="card"></div>
+        </section>
+        
+        <section id="training">
+            <div class="section-title">
+                <h2>4. Training</h2>
+                <button id="train-btn" class="btn" disabled>Train Model</button>
+            </div>
+            <div id="training-status" class="status"></div>
+            <div id="training-vis" class="card"></div>
+        </section>
+        
+        <section id="metrics">
+            <div class="section-title">
+                <h2>5. Metrics & Evaluation</h2>
+                <button id="evaluate-btn" class="btn" disabled>Evaluate Model</button>
+            </div>
+            <div id="metrics-status" class="status"></div>
+            <div class="slider-container">
+                <label for="threshold-slider">Classification Threshold (adjust for precision/recall tradeoff):</label>
+                <input type="range" id="threshold-slider" class="slider" min="0" max="1" step="0.01" value="0.5" disabled>
+                <span id="threshold-value">0.5</span>
+            </div>
+            <div id="roc-curve" class="card"></div>
+            <div class="metrics">
+                <div class="metric">
+                    <div>Accuracy</div>
+                    <div id="accuracy" class="metric-value">-</div>
+                </div>
+                <div class="metric">
+                    <div>Precision</div>
+                    <div id="precision" class="metric-value">-</div>
+                </div>
+                <div class="metric">
+                    <div>Recall</div>
+                    <div id="recall" class="metric-value">-</div>
+                </div>
+                <div class="metric">
+                    <div>F1 Score</div>
+                    <div id="f1" class="metric-value">-</div>
+                </div>
+            </div>
+            <div id="confusion-matrix" class="card"></div>
+        </section>
+        
+        <section id="prediction">
+            <div class="section-title">
+                <h2>6. Prediction & Export</h2>
+                <button id="predict-btn" class="btn" disabled>Predict on Test Data</button>
+            </div>
+            <div id="prediction-status" class="status"></div>
+            <button id="export-btn" class="btn btn-success" disabled>Export Predictions</button>
+            <button id="save-model-btn" class="btn btn-warning" disabled>Save Model</button>
+        </section>
+        
+        <section id="deployment">
+            <div class="section-title">
+                <h2>Deployment Notes</h2>
+            </div>
+            <p>To deploy this application:</p>
+            <ol>
+                <li>Create a public GitHub repository</li>
+                <li>Commit this index.html and app.js file</li>
+                <li>Enable GitHub Pages in repository settings (main branch, root folder)</li>
+                <li>Test your deployed application at: https://[your-username].github.io/[repository-name]</li>
+            </ol>
+        </section>
+        
+        <footer>
+            <p>Titanic Survival Classifier - Built with TensorFlow.js</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
