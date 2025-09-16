@@ -86,3 +86,4 @@ function download(filename, text) {
 function clearCharts() {
   Object.keys(charts).forEach((k) => {
     if (charts[k]) { charts[k].destroy();
+}
