@@ -7,14 +7,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- CDN: Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <!-- Optional Chart.js Matrix plugin for heatmap (works client-side) -->
+  <!-- Chart.js Matrix plugin for heatmap -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
   <!-- CDN: PapaParse -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #111827;
+      --bg: #0b1020;
+      --panel: #0f172a;
       --muted: #94a3b8;
       --text: #e5e7eb;
       --accent: #38bdf8;
@@ -25,241 +25,263 @@
     }
     * { box-sizing: border-box; }
     body {
-      margin: 0; padding: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, sans-serif;
-      background: radial-gradient(1200px 800px at 80% -10%, #0b1220 0%, #070b14 35%, #05070f 55%, #03050b 80%), var(--bg);
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1000px 700px at 80% -10%, #0b1220 0%, #070b14 35%, #05070f 55%, #03050b 80%), var(--bg);
       color: var(--text);
+      line-height: 1.45;
     }
     header {
-      padding: 20px 16px;
+      padding: 28px 18px;
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(56,189,248,0.08), transparent);
+      position: sticky;
+      top: 0;
+      background: rgba(11, 16, 32, 0.85);
+      backdrop-filter: blur(6px);
+      z-index: 5;
     }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 16px;
+    header h1 {
+      margin: 0 0 4px 0;
+      font-size: 22px;
+      letter-spacing: 0.2px;
     }
-    h1 {
-      font-size: 28px; margin: 0 0 6px 0; letter-spacing: 0.3px;
-    }
-    .subtitle {
-      color: var(--muted);
+    header p {
       margin: 0;
+      color: var(--muted);
       font-size: 14px;
     }
+    main { padding: 18px; max-width: 1200px; margin: 0 auto; }
     section {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
       border: 1px solid var(--border);
-      background: rgba(17,24,39,0.6);
-      backdrop-filter: blur(6px);
       border-radius: 12px;
       padding: 16px;
-      margin: 16px 0;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset, 0 10px 30px rgba(0,0,0,0.3);
+      margin-bottom: 16px;
     }
     section h2 {
-      margin-top: 0;
+      margin: 0 0 12px;
       font-size: 18px;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .grid {
-      display: grid;
-      gap: 16px;
-    }
-    @media (min-width: 900px) {
-      .grid-2 { grid-template-columns: 1fr 1fr; }
-      .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+      color: #e2e8f0;
     }
     .row {
-      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
+    .col-8 { grid-column: span 8; }
+    .col-12 { grid-column: span 12; }
+    @media (max-width: 900px) {
+      .col-6, .col-4, .col-8, .col-12 { grid-column: span 12; }
+    }
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: rgba(2,6,23,0.35);
     }
     .btn {
-      border: 1px solid var(--border);
-      background: #0b1324;
-      color: var(--text);
+      appearance: none;
+      border: 1px solid #1e293b;
+      background: linear-gradient(180deg, #0ea5e9, #0284c7);
+      color: white;
       padding: 10px 14px;
       border-radius: 10px;
-      cursor: pointer;
-      transition: transform 0.05s ease, background 0.2s ease, border-color 0.2s ease;
       font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.08s ease, filter 0.12s ease;
     }
-    .btn:hover { background: #0c1a33; border-color: #263244; }
-    .btn:active { transform: translateY(1px); }
-    .btn-primary { background: linear-gradient(180deg, #0ea5e9, #0284c7); border-color: #075985; }
-    .btn-primary:hover { background: linear-gradient(180deg, #38bdf8, #0ea5e9); }
-    .btn-good { background: linear-gradient(180deg, #22c55e, #16a34a); border-color: #166534; }
-    .btn-warn { background: linear-gradient(180deg, #f59e0b, #d97706); border-color: #92400e; }
-    .btn-danger { background: linear-gradient(180deg, #ef4444, #dc2626); border-color: #7f1d1d; }
-    .pill {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 6px 10px; border: 1px solid var(--border);
-      background: #0b1324; border-radius: 999px; color: var(--muted);
-      font-size: 12px;
+    .btn.secondary {
+      background: linear-gradient(180deg, #16a34a, #15803d);
     }
-    .msg { color: var(--muted); font-size: 13px; }
-    .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
-    .status { font-size: 13px; color: var(--muted); }
-    .shape { font-weight: 600; color: var(--accent); }
+    .btn.warn {
+      background: linear-gradient(180deg, #f59e0b, #d97706);
+    }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn:hover { filter: brightness(1.05); }
+    .file {
+      background: rgba(30,41,59,0.4);
+      border: 1px dashed #334155;
+      padding: 10px;
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
     table {
-      width: 100%; border-collapse: collapse; font-size: 13px; overflow: auto;
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 13px;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--border);
     }
-    th, td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: left; }
-    th { color: #cbd5e1; background: rgba(2,6,23,0.6); position: sticky; top: 0; }
-    .scroll {
-      max-height: 360px; overflow: auto; border: 1px solid var(--border); border-radius: 10px;
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+      white-space: nowrap;
     }
-    .cards {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;
+    th {
+      background: rgba(148,163,184,0.08);
+      color: #e2e8f0;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
-    .card {
-      border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: #0b1324;
+    tbody tr:nth-child(odd) td { background: rgba(148,163,184,0.03); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+    .note { color: var(--muted); font-size: 13px; }
+    .pill {
+      display: inline-block; padding: 2px 8px; border-radius: 999px;
+      background: rgba(56,189,248,0.2); color: #7dd3fc; font-size: 12px; margin-left: 6px;
     }
-    .card .k { font-size: 12px; color: var(--muted); }
-    .card .v { font-size: 18px; font-weight: 700; color: var(--text); }
-    canvas { background: #0a1020; border-radius: 10px; }
-    footer { color: var(--muted); font-size: 12px; padding: 32px 16px; text-align: center; }
-    .inline-code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: #0a1327; padding: 2px 6px; border-radius: 6px; border: 1px solid #0f1b36; color: #bfdbfe; }
+    .inline-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      padding: 2px 6px; border-radius: 6px; background: #0b1220; border: 1px solid #1f2937;
+    }
+    .kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; }
+    .kv div:nth-child(odd) { color: var(--muted); }
+    footer {
+      padding: 16px; color: var(--muted); text-align: center;
+    }
+    canvas { background: rgba(2,6,23,0.2); border-radius: 8px; }
   </style>
 </head>
 <body>
   <header>
-    <div class="container">
-      <h1>Interactive EDA: Kaggle Titanic (Client-side)</h1>
-      <p class="subtitle">Load train.csv and test.csv, merge with a source flag, explore, chart, and export — all in your browser.</p>
-    </div>
+    <h1>Titanic Interactive EDA <span class="pill">Browser-only</span></h1>
+    <p>Load Kaggle train.csv and test.csv, merge, explore, and export. Create public GitHub repo, commit index.html/app.js, enable Pages (main/root), test URL.</p>
   </header>
 
-  <main class="container">
-    <section id="data-load">
+  <main>
+    <section id="load">
       <h2>Data Load</h2>
-      <div class="grid grid-2">
-        <div>
-          <div class="row">
-            <label class="pill">
-              <span>train.csv</span>
-              <input id="trainFile" type="file" accept=".csv" />
-            </label>
-            <label class="pill">
-              <span>test.csv</span>
-              <input id="testFile" type="file" accept=".csv" />
-            </label>
-          </div>
-          <div class="row" style="margin-top: 10px;">
-            <button id="btnLoad" class="btn btn-primary">Load</button>
-            <button id="btnRun" class="btn btn-good">Run EDA</button>
-            <button id="btnClear" class="btn btn-warn">Clear</button>
-          </div>
-          <p class="note">Tip: You can run with just train.csv; test.csv is optional for merging. The app adds a source column (train/test).</p>
-          <p class="status" id="loadStatus">Status: Idle</p>
-        </div>
-        <div class="cards">
-          <div class="card">
-            <div class="k">Train rows</div>
-            <div class="v" id="trainRows">-</div>
-          </div>
-          <div class="card">
-            <div class="k">Test rows</div>
-            <div class="v" id="testRows">-</div>
-          </div>
-          <div class="card">
-            <div class="k">Merged shape</div>
-            <div class="v"><span id="mergedRows">-</span> <span class="k">rows</span></div>
-          </div>
-          <div class="card">
-            <div class="k">Columns</div>
-            <div class="v" id="mergedCols">-</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="merge-overview">
-      <h2>Merge & Overview</h2>
-      <div class="row" style="margin-bottom: 8px;">
-        <span class="pill">Preview (first 12 rows)</span>
-        <span class="pill">Keep features: Pclass, Sex, Age, SibSp, Parch, Fare, Embarked, Survived, source</span>
-      </div>
-      <div class="scroll" id="previewTable"></div>
-      <p class="msg">Shape: <span class="shape" id="shapeText">-</span></p>
-    </section>
-
-    <section id="missing">
-      <h2>Missing Values</h2>
-      <div class="grid grid-2">
-        <div>
-          <div class="scroll" id="missingTable"></div>
-        </div>
-        <div>
-          <canvas id="missingChart" height="220"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <section id="stats">
-      <h2>Stats Summary</h2>
-      <div class="grid grid-2">
-        <div>
-          <h3 style="margin-top:0;">Numeric stats (merged)</h3>
-          <div class="scroll" id="numericStats"></div>
-        </div>
-        <div>
-          <h3 style="margin-top:0;">Categorical counts (merged)</h3>
-          <div class="scroll" id="categoricalStats"></div>
-        </div>
-      </div>
-      <div style="margin-top:14px;">
-        <h3>Group by Survived (train only)</h3>
-        <div class="scroll" id="bySurvived"></div>
-      </div>
-    </section>
-
-    <section id="visuals">
-      <h2>Visualizations</h2>
-      <div class="grid grid-3">
-        <div>
-          <h3>Sex vs Survived</h3>
-          <canvas id="sexChart" height="220"></canvas>
-        </div>
-        <div>
-          <h3>Pclass vs Survived</h3>
-          <canvas id="pclassChart" height="220"></canvas>
-        </div>
-        <div>
-          <h3>Embarked vs Survived</h3>
-          <canvas id="embarkedChart" height="220"></canvas>
-        </div>
-      </div>
-      <div class="grid grid-2" style="margin-top: 16px;">
-        <div>
-          <h3>Age Histogram</h3>
-          <canvas id="ageHist" height="260"></canvas>
-        </div>
-        <div>
-          <h3>Fare Histogram</h3>
-          <canvas id="fareHist" height="260"></canvas>
-        </div>
-      </div>
-      <div style="margin-top: 16px;">
-        <h3>Correlation Heatmap (train numeric)</h3>
-        <canvas id="corrHeatmap" height="360"></canvas>
-      </div>
-    </section>
-
-    <section id="export">
-      <h2>Export</h2>
       <div class="row">
-        <button id="btnExportCsv" class="btn">Download Merged CSV</button>
-        <button id="btnExportJson" class="btn">Download JSON Summary</button>
+        <div class="col-6 panel">
+          <label for="trainFile">train.csv (with Survived)</label>
+          <div class="file">
+            <input type="file" id="trainFile" accept=".csv" />
+          </div>
+        </div>
+        <div class="col-6 panel">
+          <label for="testFile">test.csv (no Survived)</label>
+          <div class="file">
+            <input type="file" id="testFile" accept=".csv" />
+          </div>
+        </div>
+        <div class="col-12">
+          <button id="btnLoad" class="btn">Load Files</button>
+          <button id="btnRun" class="btn secondary" disabled>Run EDA</button>
+        </div>
       </div>
-      <p class="note">Everything runs locally in your browser. Exports are generated on-the-fly.</p>
+      <p class="note">Tip: PapaParse handles commas in quoted fields (like names). All processing runs client-side.</p>
     </section>
 
-    <section id="deploy">
-      <h2>Deploy on GitHub Pages</h2>
-      <ol>
-        <li>Create a public GitHub repo.</li>
-        <li>Commit <span class="inline-code">index.html</span> and <span class="inline-code">app.js</span>.</li>
-        <li>Enable Pages: branch <span class="inline-code">main</span>, folder <span class="inline-code">/ (root)</span>.</li>
-        <li>Open the Pages URL and test by loading your CSV files.</li>
-      </ol>
-      <p class="note">Reusable: To adapt for other split datasets, change the schema and charts in app.js where marked.</p>
+    <section id="overview">
+      <h2>Merge & Overview</h2>
+      <div class="row">
+        <div class="col-4">
+          <div class="panel">
+            <div class="kv">
+              <div>Rows (merged)</div><div id="shapeRows">-</div>
+              <div>Columns</div><div id="shapeCols">-</div>
+              <div>Train rows</div><div id="shapeTrain">-</div>
+              <div>Test rows</div><div id="shapeTest">-</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-8 panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <strong>Preview (first 10)</strong>
+            <div class="note">Identifier PassengerId excluded from modeling; Survived is target (train only).</div>
+          </div>
+          <div style="max-height: 320px; overflow: auto;">
+                  </div>
+    </div>
+  </div>
+</section>
+
+<section id="missing">
+  <h2>Missing Values</h2>
+  <div class="row">
+    <div class="col-12 panel">
+      <canvas id="missingChart" height="180"></canvas>
+    </div>
+  </div>
+</section>
+
+<section id="stats">
+  <h2>Stats Summary</h2>
+  <div class="row">
+    <div class="col-6 panel">
+      <strong>Numeric (mean, median, std)</strong>
+      <div style="max-height: 280px; overflow:auto;">
+              </div>
+    </div>
+    <div class="col-6 panel">
+      <strong>Categorical Counts</strong>
+      <div style="max-height: 280px; overflow:auto;">
+              </div>
+    </div>
+    <div class="col-12 panel" style="margin-top:12px;">
+      <strong>By Survived (train only)</strong>
+      <div style="max-height: 280px; overflow:auto;">
+              </div>
+    </div>
+  </div>
+</section>
+
+<section id="viz">
+  <h2>Visualizations</h2>
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Sex (bar)</h3>
+      <canvas id="sexBar" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <h3>Pclass (bar)</h3>
+      <canvas id="pclassBar" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <h3>Embarked (bar)</h3>
+      <canvas id="embarkedBar" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <h3>Age (histogram)</h3>
+      <canvas id="ageHist" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <h3>Fare (histogram)</h3>
+      <canvas id="fareHist" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <h3>Correlation Heatmap (train numeric)</h3>
+      <canvas id="corrHeatmap" height="300"></canvas>
+    </div>
+  </div>
+</section>
+
+<section id="export">
+  <h2>Export</h2>
+  <div class="row">
+    <div class="col-12">
+      <button id="btnExportCsv" class="btn">Download Merged CSV</button>
+      <button id="btnExportJson" class="btn secondary">Download JSON Summary</button>
+    </div>
+  </div>
+  <p class="note">Everything runs locally in your browser. Exports are generated on-the-fly.</p>
+</section>
+
+<section id="deploy">
+  <h2>Deploy on GitHub Pages</h2>
+  <ol>
+    <li>Create a public GitHub repo.</li>
+    <li>Commit <span class="inline-code">index.html</span> and <span class="inline-code">app.js</span>.</li>
+    <li>Enable Pages: branch <span class="inline-code">main</span>, folder <span class="inline-code">/ (root)</span>.</li>
+    <li>Open the Pages URL and test by loading your CSV files.</li>
+  </ol>
+  <p class="note">Reusable: To adapt for other split datasets, change the schema and charts in app.js where marked.</p>
+</section>
