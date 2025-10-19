@@ -71,8 +71,76 @@
             color: red;
             font-weight: bold;
         }
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .input-group input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .input-group input:focus {
+            border-color: #007cba;
+            outline: none;
+            box-shadow: 0 0 5px rgba(0, 124, 186, 0.3);
+        }
+        .prediction-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            border: 2px solid;
+        }
+        .result-employable {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .result-lessemployable {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .confidence-bar {
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .confidence-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .confidence-employable {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+        .confidence-lessemployable {
+            background: linear-gradient(90deg, #dc3545, #fd7e14);
+        }
+        .feature-description {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
         @media (max-width: 768px) {
             .metrics-container {
+                grid-template-columns: 1fr;
+            }
+            .input-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -132,8 +200,58 @@
     <!-- Prediction Section -->
     <div class="section">
         <h2>Prediction</h2>
-        <button id="predictNew" disabled>Make Predictions</button>
-        <div id="predictionResults"></div>
+        <div class="prediction-form">
+            <h3>Manual Prediction</h3>
+            <p>Enter student assessment scores (2-5) to predict employability:</p>
+            
+            <div class="input-grid">
+                <div class="input-group">
+                    <label for="generalAppearance">General Appearance:</label>
+                    <input type="number" id="generalAppearance" min="2" max="5" step="1" value="3">
+                    <div class="feature-description">Overall professional presentation</div>
+                </div>
+                <div class="input-group">
+                    <label for="mannerSpeaking">Manner of Speaking:</label>
+                    <input type="number" id="mannerSpeaking" min="2" max="5" step="1" value="3">
+                    <div class="feature-description">Communication style and clarity</div>
+                </div>
+                <div class="input-group">
+                    <label for="physicalCondition">Physical Condition:</label>
+                    <input type="number" id="physicalCondition" min="2" max="5" step="1" value="3">
+                    <div class="feature-description">Health and physical readiness</div>
+                </div>
+                <div class="input-group">
+                    <label for="mentalAlertness">Mental Alertness:</label>
+                    <input type="number" id="mentalAlertness" min="2" max="5" step="1" value="3">
+                    <div class="feature-description">Cognitive sharpness and awareness</div>
+                </div>
+                <div class="input-group">
+                    <label for="selfConfidence">Self-Confidence:</label>
+                    <input type="number" id="selfConfidence" min="2" max="5" step="1" value="3">
+                    <div class="feature-description">Belief in own abilities</div>
+                </div>
+                <div class="input-group">
+                    <label for="abilityPresentIdeas">Ability to Present Ideas:</label>
+                    <input type="number" id="abilityPresentIdeas" min="2" max="5" step="1" value="3">
+                    <div class="feature-description">Clarity in expressing thoughts</div>
+                </div>
+                <div class="input-group">
+                    <label for="communicationSkills">Communication Skills:</label>
+                    <input type="number" id="communicationSkills" min="2" max="5" step="1" value="3">
+                    <div class="feature-description">Overall communication ability</div>
+                </div>
+                <div class="input-group">
+                    <label for="performanceRating">Student Performance Rating:</label>
+                    <input type="number" id="performanceRating" min="2" max="5" step="1" value="3">
+                    <div class="feature-description">Academic and overall performance</div>
+                </div>
+            </div>
+            
+            <button id="predictSingle">Predict Employability</button>
+            <button id="resetForm" style="background: #6c757d;">Reset Form</button>
+            
+            <div id="singlePredictionResult"></div>
+        </div>
     </div>
 
     <!-- Deployment Notes -->
