@@ -24,7 +24,6 @@ const TARGET_COLUMN = 'CLASS'; // Target variable name
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Student Employability Classifier initialized');
     initializeEventListeners();
-    createPredictionForm();
     loadData();
 });
 
@@ -83,7 +82,8 @@ function initializeEventListeners() {
             await trainModel(model, trainFeatures, trainLabels, validationData, validationLabels);
             
             // Enable prediction and evaluation
-            document.getElementById('predictNew').disabled = false;
+            document.getElementById('predictSingle').disabled = false;
+            document.getElementById('resetForm').disabled = false;
             document.getElementById('thresholdSlider').disabled = false;
             trainButton.textContent = 'Training Complete';
             trainingInfo.innerHTML = '<span style="color: green;">✓ Training completed successfully</span>';
@@ -111,89 +111,25 @@ function initializeEventListeners() {
             evaluateModel(threshold);
         }
     });
-}
 
-// Create prediction form with input fields
-function createPredictionForm() {
-    const predictionSection = document.querySelector('#predictionResults').parentNode;
-    
-    const formHTML = `
-        <div class="prediction-form">
-            <h3>Manual Prediction</h3>
-            <p>Enter student assessment scores (2-5) to predict employability:</p>
-            <div class="input-grid">
-                <div class="input-group">
-                    <label for="generalAppearance">General Appearance:</label>
-                    <input type="number" id="generalAppearance" min="2" max="5" step="1" value="3">
-                </div>
-                <div class="input-group">
-                    <label for="mannerSpeaking">Manner of Speaking:</label>
-                    <input type="number" id="mannerSpeaking" min="2" max="5" step="1" value="3">
-                </div>
-                <div class="input-group">
-                    <label for="physicalCondition">Physical Condition:</label>
-                    <input type="number" id="physicalCondition" min="2" max="5" step="1" value="3">
-                </div>
-                <div class="input-group">
-                    <label for="mentalAlertness">Mental Alertness:</label>
-                    <input type="number" id="mentalAlertness" min="2" max="5" step="1" value="3">
-                </div>
-                <div class="input-group">
-                    <label for="selfConfidence">Self-Confidence:</label>
-                    <input type="number" id="selfConfidence" min="2" max="5" step="1" value="3">
-                </div>
-                <div class="input-group">
-                    <label for="abilityPresentIdeas">Ability to Present Ideas:</label>
-                    <input type="number" id="abilityPresentIdeas" min="2" max="5" step="1" value="3">
-                </div>
-                <div class="input-group">
-                    <label for="communicationSkills">Communication Skills:</label>
-                    <input type="number" id="communicationSkills" min="2" max="5" step="1" value="3">
-                </div>
-                <div class="input-group">
-                    <label for="performanceRating">Student Performance Rating:</label>
-                    <input type="number" id="performanceRating" min="2" max="5" step="1" value="3">
-                </div>
-            </div>
-            <button id="predictSingle">Predict Employability</button>
-            <div id="singlePredictionResult" style="margin-top: 15px; padding: 10px; border-radius: 5px;"></div>
-        </div>
-    `;
-    
-    predictionSection.innerHTML += formHTML;
-    
-    // Add styles for the form
-    const style = document.createElement('style');
-    style.textContent = `
-        .input-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 15px 0;
-        }
-        .input-group {
-            display: flex;
-            flex-direction: column;
-        }
-        .input-group label {
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .input-group input {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        @media (max-width: 768px) {
-            .input-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Add event listener for prediction button
+    // Predict single button
     document.getElementById('predictSingle').addEventListener('click', predictSingle);
+    
+    // Reset form button
+    document.getElementById('resetForm').addEventListener('click', function() {
+        // Reset all input fields to default value 3
+        document.getElementById('generalAppearance').value = 3;
+        document.getElementById('mannerSpeaking').value = 3;
+        document.getElementById('physicalCondition').value = 3;
+        document.getElementById('mentalAlertness').value = 3;
+        document.getElementById('selfConfidence').value = 3;
+        document.getElementById('abilityPresentIdeas').value = 3;
+        document.getElementById('communicationSkills').value = 3;
+        document.getElementById('performanceRating').value = 3;
+        
+        // Clear prediction result
+        document.getElementById('singlePredictionResult').innerHTML = '';
+    });
 }
 
 // Predict for single input
@@ -238,17 +174,20 @@ function predictSingle() {
         // Display results
         const resultDiv = document.getElementById('singlePredictionResult');
         const confidence = (probability * 100).toFixed(2);
-        const confidenceClass = probability >= threshold ? 'employable' : 'less-employable';
+        const confidencePercent = Math.min(100, Math.max(0, (probability - threshold) * 100 / (1 - threshold) * 100));
         
         resultDiv.innerHTML = `
-            <div style="background: ${probability >= threshold ? '#d4edda' : '#f8d7da'}; 
-                        border: 1px solid ${probability >= threshold ? '#c3e6cb' : '#f5c6cb'};
-                        color: ${probability >= threshold ? '#155724' : '#721c24'};
-                        padding: 15px; border-radius: 5px;">
+            <div class="prediction-result ${probability >= threshold ? 'result-employable' : 'result-lessemployable'}">
                 <h4 style="margin-top: 0;">Prediction Result</h4>
                 <p><strong>Predicted Class:</strong> ${predictedClass}</p>
                 <p><strong>Probability:</strong> ${confidence}%</p>
                 <p><strong>Threshold:</strong> ${(threshold * 100).toFixed(2)}%</p>
+                
+                <div class="confidence-bar">
+                    <div class="confidence-fill ${probability >= threshold ? 'confidence-employable' : 'confidence-lessemployable'}" 
+                         style="width: ${Math.abs(confidencePercent)}%"></div>
+                </div>
+                
                 <p><strong>Confidence:</strong> 
                     <span style="color: ${probability >= threshold ? '#28a745' : '#dc3545'}; font-weight: bold;">
                         ${Math.abs((probability - threshold) * 100).toFixed(2)}% ${probability >= threshold ? 'above' : 'below'} threshold
