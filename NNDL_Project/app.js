@@ -27,7 +27,7 @@ document.getElementById('loadData').addEventListener('click', async function() {
         loadButton.textContent = 'Loading...';
         
         // Replace with your actual GitHub raw CSV URL
-        const csvUrl = 'https://raw.githubusercontent.com/your-username/your-repo/main/data.csv';
+        const csvUrl = 'https://github.com/MVTERENIN/neuralndl/blob/main/NNDL_Project/data.csv';
         
         const response = await fetch(csvUrl);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
