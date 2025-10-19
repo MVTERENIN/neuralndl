@@ -188,10 +188,27 @@ function displayDataInfo(data) {
     const infoDiv = document.getElementById('dataInfo');
     const missingCounts = calculateMissingValues(data);
     
+    // Count class distribution for display
+    let employableCount = 0;
+    let lessEmployableCount = 0;
+    
+    data.forEach(row => {
+        const targetValue = row[TARGET_COLUMN.toLowerCase()];
+        if (targetValue) {
+            const targetLower = targetValue.toString().toLowerCase();
+            if (targetLower.includes('employable') && !targetLower.includes('less')) {
+                employableCount++;
+            } else if (targetLower.includes('less')) {
+                lessEmployableCount++;
+            }
+        }
+    });
+    
     infoDiv.innerHTML = `
         <h3>Dataset Information</h3>
         <p><strong>Shape:</strong> ${data.length} rows × ${Object.keys(data[0]).length} columns</p>
         <p><strong>Target Variable:</strong> ${TARGET_COLUMN.toLowerCase()}</p>
+        <p><strong>Class Distribution:</strong> ${employableCount} Employable, ${lessEmployableCount} LessEmployable</p>
         <p><strong>Features:</strong> ${FEATURE_COLUMNS.join(', ')}</p>
         <h4>Missing Values:</h4>
         <table>
@@ -249,8 +266,8 @@ async function preprocessDataAutomatically() {
             <p><strong>Preprocessing Complete</strong></p>
             <p>Features shape: [${features.shape[0]}, ${features.shape[1]}]</p>
             <p>Labels shape: [${labels.shape[0]}]</p>
-            <p>Class distribution: ${processed.classDistribution.employable} Employable, 
-            ${processed.classDistribution.unemployable} Unemployable</p>
+            <p>Class distribution: ${processed.classDistribution.employable} Employable (1), 
+            ${processed.classDistribution.lessEmployable} LessEmployable (0)</p>
         `;
         
         // Create visualization
@@ -275,7 +292,7 @@ function preprocessData(data) {
     const featuresArray = [];
     const labelsArray = [];
     let employableCount = 0;
-    let unemployableCount = 0;
+    let lessEmployableCount = 0;
 
     console.log('Starting preprocessing...');
     console.log('First row sample:', data[0]);
@@ -308,18 +325,18 @@ function preprocessData(data) {
                 throw new Error(`Missing target value in ${TARGET_COLUMN} for row ${index}`);
             }
             
-            // Convert to binary (1 for Employable, 0 for Unemployable)
+            // Convert to binary (1 for Employable, 0 for LessEmployable)
             const targetLower = targetValue.toString().toLowerCase();
             let encodedLabel;
             
-            if (targetLower.includes('employable')) {
-                encodedLabel = 1;
+            if (targetLower.includes('employable') && !targetLower.includes('less')) {
+                encodedLabel = 1; // Employable -> 1
                 employableCount++;
-            } else if (targetLower.includes('unemployable')) {
-                encodedLabel = 0;
-                unemployableCount++;
+            } else if (targetLower.includes('less')) {
+                encodedLabel = 0; // LessEmployable -> 0
+                lessEmployableCount++;
             } else {
-                throw new Error(`Unknown target value: ${targetValue} (row ${index})`);
+                throw new Error(`Unknown target value: ${targetValue} (row ${index}). Expected 'Employable' or 'LessEmployable'`);
             }
             
             labelsArray.push(encodedLabel);
@@ -331,13 +348,14 @@ function preprocessData(data) {
     });
 
     console.log('Preprocessing completed. Features:', featuresArray.length, 'Labels:', labelsArray.length);
+    console.log('Class distribution - Employable:', employableCount, 'LessEmployable:', lessEmployableCount);
 
     return {
         features: tf.tensor2d(featuresArray),
         labels: tf.tensor1d(labelsArray),
         classDistribution: {
             employable: employableCount,
-            unemployable: unemployableCount
+            lessEmployable: lessEmployableCount
         }
     };
 }
@@ -345,8 +363,8 @@ function preprocessData(data) {
 // Create data visualization
 function createDataVisualization(classDistribution) {
     const data = [
-        { index: 'Employable', value: classDistribution.employable },
-        { index: 'Unemployable', value: classDistribution.unemployable }
+        { index: 'Employable (1)', value: classDistribution.employable },
+        { index: 'LessEmployable (0)', value: classDistribution.lessEmployable }
     ];
 
     const surface = { name: 'Class Distribution', tab: 'Data Analysis' };
@@ -488,9 +506,9 @@ function displayMetrics(metrics, threshold) {
     confusionDiv.innerHTML = `
         <h4>Confusion Matrix (Threshold: ${threshold.toFixed(2)})</h4>
         <table>
-            <tr><th></th><th>Predicted Negative</th><th>Predicted Positive</th></tr>
-            <tr><th>Actual Negative</th><td>${metrics.tn}</td><td>${metrics.fp}</td></tr>
-            <tr><th>Actual Positive</th><td>${metrics.fn}</td><td>${metrics.tp}</td></tr>
+            <tr><th></th><th>Predicted LessEmployable (0)</th><th>Predicted Employable (1)</th></tr>
+            <tr><th>Actual LessEmployable (0)</th><td>${metrics.tn}</td><td>${metrics.fp}</td></tr>
+            <tr><th>Actual Employable (1)</th><td>${metrics.fn}</td><td>${metrics.tp}</td></tr>
         </table>
     `;
     
