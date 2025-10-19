@@ -10,6 +10,7 @@ let trainingHistory = [];
 let validationData = null;
 let validationLabels = null;
 let validationPredictions = null;
+let isTraining = false;
 
 // Feature configuration - UPDATE THESE FOR DIFFERENT DATASETS
 const FEATURE_COLUMNS = [
@@ -23,6 +24,7 @@ const TARGET_COLUMN = 'CLASS'; // Target variable name
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Student Employability Classifier initialized');
     initializeEventListeners();
+    createPredictionForm();
     loadData();
 });
 
@@ -52,13 +54,19 @@ function initializeEventListeners() {
 
     // Train model button
     document.getElementById('trainModel').addEventListener('click', async function() {
+        if (isTraining) return;
+        
         try {
+            isTraining = true;
             const trainButton = this;
             const trainingInfo = document.getElementById('trainingInfo');
             
             trainButton.disabled = true;
             trainButton.textContent = 'Training...';
             trainingInfo.innerHTML = '<span class="loading">Training model... This may take a few moments.</span>';
+            
+            // Clear previous training charts
+            tfvis.visor().close();
             
             // Split data into training and validation sets (80/20)
             const splitIndex = Math.floor(features.shape[0] * 0.8);
@@ -89,6 +97,8 @@ function initializeEventListeners() {
             document.getElementById('trainingInfo').innerHTML = `<span class="error">${errorMessage}</span>`;
             document.getElementById('trainModel').disabled = false;
             document.getElementById('trainModel').textContent = 'Train Model';
+        } finally {
+            isTraining = false;
         }
     });
 
@@ -101,21 +111,155 @@ function initializeEventListeners() {
             evaluateModel(threshold);
         }
     });
+}
 
-    // Predict button
-    document.getElementById('predictNew').addEventListener('click', function() {
-        const resultsDiv = document.getElementById('predictionResults');
-        resultsDiv.innerHTML = `
-            <p><strong>Prediction functionality ready.</strong></p>
-            <p>The model is trained and can make predictions. To add custom prediction functionality, you would:</p>
-            <ol>
-                <li>Add input fields for each feature</li>
-                <li>Preprocess the input values using the same pipeline</li>
-                <li>Call model.predict() with the processed data</li>
-                <li>Display the results with the current threshold</li>
-            </ol>
+// Create prediction form with input fields
+function createPredictionForm() {
+    const predictionSection = document.querySelector('#predictionResults').parentNode;
+    
+    const formHTML = `
+        <div class="prediction-form">
+            <h3>Manual Prediction</h3>
+            <p>Enter student assessment scores (2-5) to predict employability:</p>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label for="generalAppearance">General Appearance:</label>
+                    <input type="number" id="generalAppearance" min="2" max="5" step="1" value="3">
+                </div>
+                <div class="input-group">
+                    <label for="mannerSpeaking">Manner of Speaking:</label>
+                    <input type="number" id="mannerSpeaking" min="2" max="5" step="1" value="3">
+                </div>
+                <div class="input-group">
+                    <label for="physicalCondition">Physical Condition:</label>
+                    <input type="number" id="physicalCondition" min="2" max="5" step="1" value="3">
+                </div>
+                <div class="input-group">
+                    <label for="mentalAlertness">Mental Alertness:</label>
+                    <input type="number" id="mentalAlertness" min="2" max="5" step="1" value="3">
+                </div>
+                <div class="input-group">
+                    <label for="selfConfidence">Self-Confidence:</label>
+                    <input type="number" id="selfConfidence" min="2" max="5" step="1" value="3">
+                </div>
+                <div class="input-group">
+                    <label for="abilityPresentIdeas">Ability to Present Ideas:</label>
+                    <input type="number" id="abilityPresentIdeas" min="2" max="5" step="1" value="3">
+                </div>
+                <div class="input-group">
+                    <label for="communicationSkills">Communication Skills:</label>
+                    <input type="number" id="communicationSkills" min="2" max="5" step="1" value="3">
+                </div>
+                <div class="input-group">
+                    <label for="performanceRating">Student Performance Rating:</label>
+                    <input type="number" id="performanceRating" min="2" max="5" step="1" value="3">
+                </div>
+            </div>
+            <button id="predictSingle">Predict Employability</button>
+            <div id="singlePredictionResult" style="margin-top: 15px; padding: 10px; border-radius: 5px;"></div>
+        </div>
+    `;
+    
+    predictionSection.innerHTML += formHTML;
+    
+    // Add styles for the form
+    const style = document.createElement('style');
+    style.textContent = `
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        @media (max-width: 768px) {
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Add event listener for prediction button
+    document.getElementById('predictSingle').addEventListener('click', predictSingle);
+}
+
+// Predict for single input
+function predictSingle() {
+    if (!model) {
+        alert('Please create and train the model first!');
+        return;
+    }
+    
+    try {
+        // Get values from form
+        const inputValues = [
+            parseFloat(document.getElementById('generalAppearance').value),
+            parseFloat(document.getElementById('mannerSpeaking').value),
+            parseFloat(document.getElementById('physicalCondition').value),
+            parseFloat(document.getElementById('mentalAlertness').value),
+            parseFloat(document.getElementById('selfConfidence').value),
+            parseFloat(document.getElementById('abilityPresentIdeas').value),
+            parseFloat(document.getElementById('communicationSkills').value),
+            parseFloat(document.getElementById('performanceRating').value)
+        ];
+        
+        // Validate inputs
+        for (let i = 0; i < inputValues.length; i++) {
+            if (isNaN(inputValues[i]) || inputValues[i] < 2 || inputValues[i] > 5) {
+                alert(`Please enter valid values between 2 and 5 for all fields. Invalid value at: ${FEATURE_COLUMNS[i]}`);
+                return;
+            }
+        }
+        
+        // Create tensor and predict
+        const inputTensor = tf.tensor2d([inputValues]);
+        const prediction = model.predict(inputTensor);
+        const probability = prediction.dataSync()[0];
+        prediction.dispose();
+        inputTensor.dispose();
+        
+        // Get current threshold
+        const threshold = parseFloat(document.getElementById('thresholdSlider').value);
+        const predictedClass = probability >= threshold ? 'Employable' : 'LessEmployable';
+        
+        // Display results
+        const resultDiv = document.getElementById('singlePredictionResult');
+        const confidence = (probability * 100).toFixed(2);
+        const confidenceClass = probability >= threshold ? 'employable' : 'less-employable';
+        
+        resultDiv.innerHTML = `
+            <div style="background: ${probability >= threshold ? '#d4edda' : '#f8d7da'}; 
+                        border: 1px solid ${probability >= threshold ? '#c3e6cb' : '#f5c6cb'};
+                        color: ${probability >= threshold ? '#155724' : '#721c24'};
+                        padding: 15px; border-radius: 5px;">
+                <h4 style="margin-top: 0;">Prediction Result</h4>
+                <p><strong>Predicted Class:</strong> ${predictedClass}</p>
+                <p><strong>Probability:</strong> ${confidence}%</p>
+                <p><strong>Threshold:</strong> ${(threshold * 100).toFixed(2)}%</p>
+                <p><strong>Confidence:</strong> 
+                    <span style="color: ${probability >= threshold ? '#28a745' : '#dc3545'}; font-weight: bold;">
+                        ${Math.abs((probability - threshold) * 100).toFixed(2)}% ${probability >= threshold ? 'above' : 'below'} threshold
+                    </span>
+                </p>
+            </div>
         `;
-    });
+        
+    } catch (error) {
+        alert(`Error making prediction: ${error.message}`);
+    }
 }
 
 // Load dataset from current directory
@@ -404,9 +548,14 @@ function createModel() {
     return model;
 }
 
-// Train the model
+// Train the model with real-time metrics
 async function trainModel(model, trainFeatures, trainLabels, valFeatures, valLabels) {
-    const surface = { name: 'Training Metrics', tab: 'Training' };
+    // Create surfaces for metrics
+    const lossSurface = { name: 'Loss', tab: 'Training' };
+    const accuracySurface = { name: 'Accuracy', tab: 'Training' };
+    
+    // Clear previous data
+    trainingHistory = [];
     
     // Early stopping callback
     let bestValLoss = Infinity;
@@ -441,8 +590,53 @@ async function trainModel(model, trainFeatures, trainLabels, valFeatures, valLab
                     val_acc: logs.val_acc
                 });
                 
-                // Plot to tfvis
-                tfvis.show.fitCallbacks(surface, ['loss', 'val_loss', 'acc', 'val_acc']);
+                // Update training info with current metrics
+                const trainingInfo = document.getElementById('trainingInfo');
+                trainingInfo.innerHTML = `
+                    <span class="loading">Training... Epoch ${epoch + 1}/50</span><br>
+                    <small>Loss: ${logs.loss.toFixed(4)} | Accuracy: ${(logs.acc * 100).toFixed(2)}% | Val Loss: ${logs.val_loss.toFixed(4)} | Val Accuracy: ${(logs.val_acc * 100).toFixed(2)}%</small>
+                `;
+                
+                // Plot metrics in real-time
+                const lossData = {
+                    values: trainingHistory.map(h => ({ x: h.epoch, y: h.loss })),
+                    series: ['Training Loss']
+                };
+                
+                const valLossData = {
+                    values: trainingHistory.map(h => ({ x: h.epoch, y: h.val_loss })),
+                    series: ['Validation Loss']
+                };
+                
+                const accuracyData = {
+                    values: trainingHistory.map(h => ({ x: h.epoch, y: h.accuracy })),
+                    series: ['Training Accuracy']
+                };
+                
+                const valAccuracyData = {
+                    values: trainingHistory.map(h => ({ x: h.epoch, y: h.val_acc })),
+                    series: ['Validation Accuracy']
+                };
+                
+                // Render charts
+                tfvis.render.linechart(lossSurface, [lossData, valLossData], {
+                    xLabel: 'Epoch',
+                    yLabel: 'Loss',
+                    width: 400,
+                    height: 300,
+                    seriesColors: ['blue', 'red']
+                });
+                
+                tfvis.render.linechart(accuracySurface, [accuracyData, valAccuracyData], {
+                    xLabel: 'Epoch',
+                    yLabel: 'Accuracy',
+                    width: 400,
+                    height: 300,
+                    seriesColors: ['green', 'orange']
+                });
+            },
+            onTrainEnd: () => {
+                console.log('Training completed');
             }
         }
     });
