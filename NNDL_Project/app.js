@@ -19,47 +19,75 @@ const FEATURE_COLUMNS = [
 ];
 const TARGET_COLUMN = 'CLASS'; // Target variable name
 
-// Load dataset from GitHub
-document.getElementById('loadData').addEventListener('click', async function() {
+// Initialize application when page loads
+window.addEventListener('load', async function() {
+    console.log('Student Employability Classifier initialized');
+    await loadData();
+});
+
+// Load dataset from current directory
+async function loadData() {
     try {
-        const loadButton = this;
-        loadButton.disabled = true;
-        loadButton.textContent = 'Loading...';
+        const dataStatus = document.getElementById('dataStatus');
+        dataStatus.innerHTML = '<span class="loading">Loading data.csv from current directory...</span>';
         
-        // Replace with your actual GitHub raw CSV URL
-        const csvUrl = 'https://github.com/MVTERENIN/neuralndl/blob/main/NNDL_Project/data.csv';
-        
-        const response = await fetch(csvUrl);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        // Load CSV file from same directory
+        const response = await fetch('data.csv');
+        if (!response.ok) {
+            throw new Error(`Failed to load data.csv: ${response.status} ${response.statusText}`);
+        }
         
         const csvText = await response.text();
-        rawData = parseCSV(csvText);
+        console.log('CSV loaded successfully, first 500 chars:', csvText.substring(0, 500));
         
+        rawData = parseCSV(csvText);
+        console.log('Parsed data sample:', rawData.slice(0, 3));
+        
+        if (rawData.length === 0) {
+            throw new Error('No data found in CSV file');
+        }
+        
+        dataStatus.innerHTML = '<span style="color: green;">✓ Data loaded successfully</span>';
         displayDataInfo(rawData);
         displayDataPreview(rawData);
         
-        document.getElementById('preprocessData').disabled = false;
+        // Auto-proceed to preprocessing
+        await preprocessDataAutomatically();
         
     } catch (error) {
-        alert(`Error loading data: ${error.message}`);
-        document.getElementById('loadData').disabled = false;
-        document.getElementById('loadData').textContent = 'Load Dataset from GitHub';
+        const errorMessage = `Error loading data: ${error.message}. Make sure data.csv is in the same folder as index.html`;
+        console.error(errorMessage);
+        document.getElementById('dataStatus').innerHTML = `<span class="error">${errorMessage}</span>`;
     }
-});
+}
 
 // Parse CSV text to array of objects
 function parseCSV(csvText) {
     const lines = csvText.trim().split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    if (lines.length === 0) return [];
     
-    return lines.slice(1).map(line => {
+    // Handle headers - convert to lowercase and trim
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    console.log('CSV Headers:', headers);
+    
+    const data = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue; // Skip empty lines
+        
         const values = line.split(',').map(v => v.trim());
+        
+        // Create object with lowercase keys
         const obj = {};
         headers.forEach((header, index) => {
-            obj[header] = values[index];
+            obj[header] = values[index] || '';
         });
-        return obj;
-    });
+        
+        data.push(obj);
+    }
+    
+    return data;
 }
 
 // Display dataset information
@@ -85,6 +113,8 @@ function displayDataInfo(data) {
 // Calculate missing values percentage
 function calculateMissingValues(data) {
     const missing = {};
+    if (data.length === 0) return missing;
+    
     Object.keys(data[0]).forEach(col => {
         missing[col] = data.filter(row => !row[col] || row[col] === '').length;
     });
@@ -95,6 +125,11 @@ function calculateMissingValues(data) {
 function displayDataPreview(data) {
     const previewDiv = document.getElementById('dataPreview');
     const previewData = data.slice(0, 5);
+    
+    if (previewData.length === 0) {
+        previewDiv.innerHTML = '<p>No data to display</p>';
+        return;
+    }
     
     previewDiv.innerHTML = `
         <h3>Data Preview (first 5 rows)</h3>
@@ -107,13 +142,16 @@ function displayDataPreview(data) {
     `;
 }
 
-// Preprocess data
-document.getElementById('preprocessData').addEventListener('click', function() {
+// Automatically preprocess data after loading
+async function preprocessDataAutomatically() {
     try {
+        document.getElementById('preprocessStatus').innerHTML = '<span class="loading">Preprocessing data...</span>';
+        
         const processed = preprocessData(rawData);
         features = processed.features;
         labels = processed.labels;
         
+        document.getElementById('preprocessStatus').innerHTML = '<span style="color: green;">✓ Preprocessing complete</span>';
         document.getElementById('preprocessInfo').innerHTML = `
             <p><strong>Preprocessing Complete</strong></p>
             <p>Features shape: [${features.shape[0]}, ${features.shape[1]}]</p>
@@ -125,40 +163,81 @@ document.getElementById('preprocessData').addEventListener('click', function() {
         // Create visualization
         createDataVisualization(processed.classDistribution);
         
+        // Enable model creation button
         document.getElementById('createModel').disabled = false;
         
     } catch (error) {
-        alert(`Error preprocessing data: ${error.message}`);
+        const errorMessage = `Error preprocessing data: ${error.message}`;
+        console.error(errorMessage);
+        document.getElementById('preprocessStatus').innerHTML = `<span class="error">${errorMessage}</span>`;
     }
-});
+}
 
 // Preprocess the dataset
 function preprocessData(data) {
+    if (data.length === 0) {
+        throw new Error('No data available for preprocessing');
+    }
+    
     const featuresArray = [];
     const labelsArray = [];
     let employableCount = 0;
     let unemployableCount = 0;
 
-    data.forEach(row => {
-        // Extract features (ignore case in column names)
-        const featureRow = FEATURE_COLUMNS.map(col => {
-            const value = row[col.toLowerCase()];
-            if (!value || isNaN(value)) throw new Error(`Invalid feature value in ${col}: ${value}`);
-            return parseFloat(value);
-        });
-        featuresArray.push(featureRow);
+    console.log('Starting preprocessing...');
+    console.log('First row sample:', data[0]);
 
-        // Extract and encode target variable
-        const targetValue = row[TARGET_COLUMN.toLowerCase()];
-        if (!targetValue) throw new Error(`Missing target value in ${TARGET_COLUMN}`);
-        
-        // Convert to binary (1 for Employable, 0 for Unemployable)
-        const encodedLabel = targetValue.toLowerCase().includes('employable') ? 1 : 0;
-        labelsArray.push(encodedLabel);
-        
-        if (encodedLabel === 1) employableCount++;
-        else unemployableCount++;
+    data.forEach((row, index) => {
+        try {
+            // Extract features (ignore case in column names)
+            const featureRow = FEATURE_COLUMNS.map(col => {
+                const key = col.toLowerCase();
+                const value = row[key];
+                
+                if (value === undefined || value === null || value === '') {
+                    throw new Error(`Missing feature value for ${col} in row ${index}`);
+                }
+                
+                const numValue = parseFloat(value);
+                if (isNaN(numValue)) {
+                    throw new Error(`Invalid numeric value in ${col}: ${value} (row ${index})`);
+                }
+                
+                return numValue;
+            });
+            featuresArray.push(featureRow);
+
+            // Extract and encode target variable
+            const targetKey = TARGET_COLUMN.toLowerCase();
+            const targetValue = row[targetKey];
+            
+            if (!targetValue) {
+                throw new Error(`Missing target value in ${TARGET_COLUMN} for row ${index}`);
+            }
+            
+            // Convert to binary (1 for Employable, 0 for Unemployable)
+            const targetLower = targetValue.toString().toLowerCase();
+            let encodedLabel;
+            
+            if (targetLower.includes('employable')) {
+                encodedLabel = 1;
+                employableCount++;
+            } else if (targetLower.includes('unemployable')) {
+                encodedLabel = 0;
+                unemployableCount++;
+            } else {
+                throw new Error(`Unknown target value: ${targetValue} (row ${index})`);
+            }
+            
+            labelsArray.push(encodedLabel);
+            
+        } catch (error) {
+            console.error(`Error processing row ${index}:`, error.message);
+            throw error;
+        }
     });
+
+    console.log('Preprocessing completed. Features:', featuresArray.length, 'Labels:', labelsArray.length);
 
     return {
         features: tf.tensor2d(featuresArray),
@@ -186,7 +265,7 @@ function createDataVisualization(classDistribution) {
     });
 }
 
-// Create model
+// Create model when button is clicked
 document.getElementById('createModel').addEventListener('click', function() {
     try {
         model = createModel();
@@ -195,13 +274,16 @@ document.getElementById('createModel').addEventListener('click', function() {
             <p>Architecture: Input(${FEATURE_COLUMNS.length}) → Dense(16, relu) → Dense(1, sigmoid)</p>
         `;
         
-        // Print model summary
+        // Print model summary to console
+        console.log('Model summary:');
         model.summary();
         
         document.getElementById('trainModel').disabled = false;
         
     } catch (error) {
-        alert(`Error creating model: ${error.message}`);
+        const errorMessage = `Error creating model: ${error.message}`;
+        console.error(errorMessage);
+        alert(errorMessage);
     }
 });
 
@@ -233,12 +315,15 @@ function createModel() {
     return model;
 }
 
-// Train model
+// Train model when button is clicked
 document.getElementById('trainModel').addEventListener('click', async function() {
     try {
         const trainButton = this;
+        const trainingInfo = document.getElementById('trainingInfo');
+        
         trainButton.disabled = true;
         trainButton.textContent = 'Training...';
+        trainingInfo.innerHTML = '<span class="loading">Training model... This may take a few moments.</span>';
         
         // Split data into training and validation sets (80/20)
         const splitIndex = Math.floor(features.shape[0] * 0.8);
@@ -248,6 +333,9 @@ document.getElementById('trainModel').addEventListener('click', async function()
         validationData = features.slice(splitIndex);
         validationLabels = labels.slice(splitIndex);
         
+        console.log('Training set size:', trainFeatures.shape[0]);
+        console.log('Validation set size:', validationData.shape[0]);
+        
         // Train the model
         await trainModel(model, trainFeatures, trainLabels, validationData, validationLabels);
         
@@ -255,9 +343,15 @@ document.getElementById('trainModel').addEventListener('click', async function()
         document.getElementById('predictNew').disabled = false;
         document.getElementById('thresholdSlider').disabled = false;
         trainButton.textContent = 'Training Complete';
+        trainingInfo.innerHTML = '<span style="color: green;">✓ Training completed successfully</span>';
+        
+        // Auto-evaluate with default threshold
+        evaluateModel(0.5);
         
     } catch (error) {
-        alert(`Error training model: ${error.message}`);
+        const errorMessage = `Error training model: ${error.message}`;
+        console.error(errorMessage);
+        document.getElementById('trainingInfo').innerHTML = `<span class="error">${errorMessage}</span>`;
         document.getElementById('trainModel').disabled = false;
         document.getElementById('trainModel').textContent = 'Train Model';
     }
@@ -309,7 +403,7 @@ async function trainModel(model, trainFeatures, trainLabels, valFeatures, valLab
     return history;
 }
 
-// Make predictions on validation set and calculate metrics
+// Handle threshold slider changes
 document.getElementById('thresholdSlider').addEventListener('input', function() {
     const threshold = parseFloat(this.value);
     document.getElementById('thresholdValue').textContent = threshold.toFixed(2);
@@ -436,11 +530,15 @@ document.getElementById('predictNew').addEventListener('click', function() {
     const resultsDiv = document.getElementById('predictionResults');
     resultsDiv.innerHTML = `
         <p><strong>Prediction functionality ready.</strong></p>
-        <p>To make predictions on new data, you would need to preprocess the new data using the same pipeline and call model.predict().</p>
-        <p><em>Note: For a complete deployment, you would add file upload for new CSV data here.</em></p>
+        <p>The model is trained and can make predictions. To add custom prediction functionality, you would:</p>
+        <ol>
+            <li>Add input fields for each feature</li>
+            <li>Preprocess the input values using the same pipeline</li>
+            <li>Call model.predict() with the processed data</li>
+            <li>Display the results with the current threshold</li>
+        </ol>
     `;
 });
 
-// Initialize application
 console.log('Student Employability Classifier initialized');
 console.log('To use with different datasets, update FEATURE_COLUMNS and TARGET_COLUMN in app.js');
