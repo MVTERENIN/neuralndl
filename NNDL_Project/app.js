@@ -20,10 +20,103 @@ const FEATURE_COLUMNS = [
 const TARGET_COLUMN = 'CLASS'; // Target variable name
 
 // Initialize application when page loads
-window.addEventListener('load', async function() {
+document.addEventListener('DOMContentLoaded', function() {
     console.log('Student Employability Classifier initialized');
-    await loadData();
+    initializeEventListeners();
+    loadData();
 });
+
+// Initialize all event listeners
+function initializeEventListeners() {
+    // Create model button
+    document.getElementById('createModel').addEventListener('click', function() {
+        try {
+            model = createModel();
+            document.getElementById('modelInfo').innerHTML = `
+                <p><strong>Model Created Successfully</strong></p>
+                <p>Architecture: Input(${FEATURE_COLUMNS.length}) → Dense(16, relu) → Dense(1, sigmoid)</p>
+            `;
+            
+            // Print model summary to console
+            console.log('Model summary:');
+            model.summary();
+            
+            document.getElementById('trainModel').disabled = false;
+            
+        } catch (error) {
+            const errorMessage = `Error creating model: ${error.message}`;
+            console.error(errorMessage);
+            alert(errorMessage);
+        }
+    });
+
+    // Train model button
+    document.getElementById('trainModel').addEventListener('click', async function() {
+        try {
+            const trainButton = this;
+            const trainingInfo = document.getElementById('trainingInfo');
+            
+            trainButton.disabled = true;
+            trainButton.textContent = 'Training...';
+            trainingInfo.innerHTML = '<span class="loading">Training model... This may take a few moments.</span>';
+            
+            // Split data into training and validation sets (80/20)
+            const splitIndex = Math.floor(features.shape[0] * 0.8);
+            
+            const trainFeatures = features.slice(0, splitIndex);
+            const trainLabels = labels.slice(0, splitIndex);
+            validationData = features.slice(splitIndex);
+            validationLabels = labels.slice(splitIndex);
+            
+            console.log('Training set size:', trainFeatures.shape[0]);
+            console.log('Validation set size:', validationData.shape[0]);
+            
+            // Train the model
+            await trainModel(model, trainFeatures, trainLabels, validationData, validationLabels);
+            
+            // Enable prediction and evaluation
+            document.getElementById('predictNew').disabled = false;
+            document.getElementById('thresholdSlider').disabled = false;
+            trainButton.textContent = 'Training Complete';
+            trainingInfo.innerHTML = '<span style="color: green;">✓ Training completed successfully</span>';
+            
+            // Auto-evaluate with default threshold
+            evaluateModel(0.5);
+            
+        } catch (error) {
+            const errorMessage = `Error training model: ${error.message}`;
+            console.error(errorMessage);
+            document.getElementById('trainingInfo').innerHTML = `<span class="error">${errorMessage}</span>`;
+            document.getElementById('trainModel').disabled = false;
+            document.getElementById('trainModel').textContent = 'Train Model';
+        }
+    });
+
+    // Threshold slider
+    document.getElementById('thresholdSlider').addEventListener('input', function() {
+        const threshold = parseFloat(this.value);
+        document.getElementById('thresholdValue').textContent = threshold.toFixed(2);
+        
+        if (validationData && model) {
+            evaluateModel(threshold);
+        }
+    });
+
+    // Predict button
+    document.getElementById('predictNew').addEventListener('click', function() {
+        const resultsDiv = document.getElementById('predictionResults');
+        resultsDiv.innerHTML = `
+            <p><strong>Prediction functionality ready.</strong></p>
+            <p>The model is trained and can make predictions. To add custom prediction functionality, you would:</p>
+            <ol>
+                <li>Add input fields for each feature</li>
+                <li>Preprocess the input values using the same pipeline</li>
+                <li>Call model.predict() with the processed data</li>
+                <li>Display the results with the current threshold</li>
+            </ol>
+        `;
+    });
+}
 
 // Load dataset from current directory
 async function loadData() {
@@ -265,28 +358,6 @@ function createDataVisualization(classDistribution) {
     });
 }
 
-// Create model when button is clicked
-document.getElementById('createModel').addEventListener('click', function() {
-    try {
-        model = createModel();
-        document.getElementById('modelInfo').innerHTML = `
-            <p><strong>Model Created Successfully</strong></p>
-            <p>Architecture: Input(${FEATURE_COLUMNS.length}) → Dense(16, relu) → Dense(1, sigmoid)</p>
-        `;
-        
-        // Print model summary to console
-        console.log('Model summary:');
-        model.summary();
-        
-        document.getElementById('trainModel').disabled = false;
-        
-    } catch (error) {
-        const errorMessage = `Error creating model: ${error.message}`;
-        console.error(errorMessage);
-        alert(errorMessage);
-    }
-});
-
 // Create the neural network model
 function createModel() {
     const model = tf.sequential({
@@ -314,48 +385,6 @@ function createModel() {
 
     return model;
 }
-
-// Train model when button is clicked
-document.getElementById('trainModel').addEventListener('click', async function() {
-    try {
-        const trainButton = this;
-        const trainingInfo = document.getElementById('trainingInfo');
-        
-        trainButton.disabled = true;
-        trainButton.textContent = 'Training...';
-        trainingInfo.innerHTML = '<span class="loading">Training model... This may take a few moments.</span>';
-        
-        // Split data into training and validation sets (80/20)
-        const splitIndex = Math.floor(features.shape[0] * 0.8);
-        
-        const trainFeatures = features.slice(0, splitIndex);
-        const trainLabels = labels.slice(0, splitIndex);
-        validationData = features.slice(splitIndex);
-        validationLabels = labels.slice(splitIndex);
-        
-        console.log('Training set size:', trainFeatures.shape[0]);
-        console.log('Validation set size:', validationData.shape[0]);
-        
-        // Train the model
-        await trainModel(model, trainFeatures, trainLabels, validationData, validationLabels);
-        
-        // Enable prediction and evaluation
-        document.getElementById('predictNew').disabled = false;
-        document.getElementById('thresholdSlider').disabled = false;
-        trainButton.textContent = 'Training Complete';
-        trainingInfo.innerHTML = '<span style="color: green;">✓ Training completed successfully</span>';
-        
-        // Auto-evaluate with default threshold
-        evaluateModel(0.5);
-        
-    } catch (error) {
-        const errorMessage = `Error training model: ${error.message}`;
-        console.error(errorMessage);
-        document.getElementById('trainingInfo').innerHTML = `<span class="error">${errorMessage}</span>`;
-        document.getElementById('trainModel').disabled = false;
-        document.getElementById('trainModel').textContent = 'Train Model';
-    }
-});
 
 // Train the model
 async function trainModel(model, trainFeatures, trainLabels, valFeatures, valLabels) {
@@ -402,16 +431,6 @@ async function trainModel(model, trainFeatures, trainLabels, valFeatures, valLab
     
     return history;
 }
-
-// Handle threshold slider changes
-document.getElementById('thresholdSlider').addEventListener('input', function() {
-    const threshold = parseFloat(this.value);
-    document.getElementById('thresholdValue').textContent = threshold.toFixed(2);
-    
-    if (validationData && model) {
-        evaluateModel(threshold);
-    }
-});
 
 // Evaluate model with given threshold
 async function evaluateModel(threshold) {
@@ -524,21 +543,3 @@ function plotROCCurve(trueLabels, probabilities) {
         <p><strong>AUC:</strong> ${auc.toFixed(3)}</p>
     `;
 }
-
-// Make predictions on new data
-document.getElementById('predictNew').addEventListener('click', function() {
-    const resultsDiv = document.getElementById('predictionResults');
-    resultsDiv.innerHTML = `
-        <p><strong>Prediction functionality ready.</strong></p>
-        <p>The model is trained and can make predictions. To add custom prediction functionality, you would:</p>
-        <ol>
-            <li>Add input fields for each feature</li>
-            <li>Preprocess the input values using the same pipeline</li>
-            <li>Call model.predict() with the processed data</li>
-            <li>Display the results with the current threshold</li>
-        </ol>
-    `;
-});
-
-console.log('Student Employability Classifier initialized');
-console.log('To use with different datasets, update FEATURE_COLUMNS and TARGET_COLUMN in app.js');
