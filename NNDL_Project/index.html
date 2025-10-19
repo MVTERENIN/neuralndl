@@ -63,6 +63,14 @@
         th {
             background: #f5f5f5;
         }
+        .loading {
+            color: #007cba;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
         @media (max-width: 768px) {
             .metrics-container {
                 grid-template-columns: 1fr;
@@ -77,7 +85,7 @@
     <!-- Data Load Section -->
     <div class="section">
         <h2>Data Load</h2>
-        <button id="loadData">Load Dataset from GitHub</button>
+        <div id="dataStatus" class="loading">Loading data.csv from current directory...</div>
         <div id="dataInfo"></div>
         <div id="dataPreview"></div>
     </div>
@@ -85,7 +93,7 @@
     <!-- Preprocessing Section -->
     <div class="section">
         <h2>Preprocessing</h2>
-        <button id="preprocessData" disabled>Preprocess Data</button>
+        <div id="preprocessStatus"></div>
         <div id="preprocessInfo"></div>
     </div>
 
@@ -131,7 +139,7 @@
     <!-- Deployment Notes -->
     <div class="section">
         <h2>Deployment Notes</h2>
-        <p>Create public GitHub repo, commit index.html/app.js, enable Pages (main/root), test URL.</p>
+        <p>Create public GitHub repo, commit index.html/app.js/data.csv, enable Pages (main/root), test URL.</p>
         <p><strong>Dataset Schema Note:</strong> To reuse with other datasets, update the feature names and target variable in app.js</p>
     </div>
 
